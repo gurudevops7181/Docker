@@ -1,0 +1,6 @@
+FROM sreeharshav/rollingupdate:v3
+RUN apt update
+RUN apt install -y nano net-tools iputils-ping dnsutils
+RUN ln -sf /dev/stdout /var/log/nginx/access.log
+RUN ln -sf /dev/stderr /var/log/nginx/error.log
+CMD ["nginx", "-g", "daemon off;"]
