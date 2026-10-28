@@ -13,7 +13,7 @@ services:
       restart_policy:
         condition: on-failure
   db:
-    image: postgres:9.4
+    image: postgres:15-alpine
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
@@ -31,8 +31,6 @@ services:
     networks:
       - frontend
       - efk
-    depends_on:
-      - redis
     deploy:
       replicas: 2
       update_config:
@@ -54,8 +52,6 @@ services:
     networks:
       - backend
       - efk
-    depends_on:
-      - db
     deploy:
       replicas: 1
       update_config:
@@ -78,9 +74,6 @@ services:
       - frontend
       - backend
       - efk
-    depends_on:
-      - db
-      - redis
     deploy:
       mode: replicated
       replicas: 1

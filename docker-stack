@@ -1,66 +1,65 @@
-#docker config create conf ./fluentd/conf/fluent.conf
-#docker network create --driver overlay elk
-#Error response from daemon: dial tcp: lookup fluentdhost: Temporary failure in name resolution
+# Create the external network and config before deploying this stack.
 version: "3.3"
 services:
   web:
     image: httpd
     networks:
       - efk
-    depends_on:
-      - fluentdhost
     ports:
       - "80:80"
     logging:
       driver: "fluentd"
       options:
         fluentd-async-connect: "true"
-        fluentd-address: fluentdhost:24224
+        fluentd-address: localhost:24224
         tag: httpd.access
   nginx:
     image: sreeharshav/efknginx:v1
     networks:
       - efk
-    depends_on:
-      - fluentdhost
     ports:
       - "8000:80"
     logging:
       driver: "fluentd"
       options:
         fluentd-async-connect: "true"
-        fluentd-address: fluentdhost:24224
+        fluentd-address: localhost:24224
         tag: nginx.access
 
   fluentdhost:
-    image: sreeharshav/efk_fluentd:v1
+    image: sreeharshav/efk_fluentd:v2
     networks:
       - efk
-    depends_on:
-      - elasticsearch
     configs:
        - source: conf
          target: /fluentd/etc/fluent.conf
     ports:
       - "24224:24224"
       - "24224:24224/udp"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.2.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.5.5
     networks:
       - efk
     environment:
       - "discovery.type=single-node"
+      - "xpack.security.enabled=false"
     expose:
       - "9200"
     ports:
       - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
     deploy:
       placement:
         constraints: [node.role == manager]
 
   kibana:
-    image: kibana:7.2.0
+    image: docker.elastic.co/kibana/kibana:9.5.5
     networks:
       - efk
     ports:
@@ -71,3 +70,6 @@ configs:
 networks:
   efk:
     external: true
+volumes:
+  esdata:
+    driver: local
